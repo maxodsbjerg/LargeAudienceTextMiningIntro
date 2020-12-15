@@ -1,0 +1,177 @@
+---
+title: "Introduction to text mining"
+author: "Max Odsbjerg Pedersen"
+date: "12/13/2020"
+output: html_document
+---
+This report documents text mining on the city council meeting in Aarhus from 1915 until 1930. The textual data used in this report can be found via Aarhus Stadsarkiv's [github page](https://github.com/aarhusstadsarkiv/datasets/tree/master/minutes/city-council).
+
+
+The dataset is processed in the software programme R, offering various methods for statistical analysis and graphic representation of the results. In R, one works with packages each adding numerous functionalities to the core functions of R. In this example, the relevant packages are:
+
+```{r}
+install.packages("tidyverse")
+install.packages("tidytext")
+install.packages("lubridate")
+```
+
+
+```{r chunk 1 - load libraries, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(tidytext)
+library(lubridate)
+library(ggplot2)
+```
+Documentation for each package: <br>
+*https://www.tidyverse.org/packages/ <br>
+*https://cran.r-project.org/web/packages/tidytext/vignettes/tidytext.html <br>
+*https://lubridate.tidyverse.org/ <br>
+*https://ggplot2.tidyverse.org/ <br>
+*https://cran.r-project.org/web/packages/ggwordcloud/vignettes/ggwordcloud.html<br>
+
+Additional information about R: 
+https://www.r-project.org/
+
+
+
+
+# Data import and cleansing
+Council dataset from 1915 to 1930 comes in the form of a CSV-file(Comma Separated Values), which is a format for storing tabular data. In this dataset the structure is thus:
+
+
+>Each row has the following columns:
+- date_of_meeting
+>
+>   The date of the meeting (yyyy-mm-dd)
+>
+- publication_page
+
+>   The original pagenumber from the printed minutes
+>
+- page_url
+>
+   Link to a scanned copy of the printed page
+>
+- record_ids
+>
+   One or more record_ids that the current agenda item references. The ids are assigned by the City Council
+>
+- text
+>
+   The transcribed text
+
+<br>
+
+The dataset is loaded into R. This happens via the `read_csv` function, which is told the path to the CSV-files located in the folder "data":
+
+```{r chunk 2 - load data, warning=FALSE, message=FALSE}
+council <- read_csv("https://raw.githubusercontent.com/aarhusstadsarkiv/datasets/master/minutes/city-council/city-council-minutes-1915-1930.csv")
+```
+
+
+The data processing will be based on the Tidy Data Principle as it is implemented in the tidytext package. The notion is to take text and break it into individual words. In this way, there will be just one word per row in the dataset. However, this poses a problem in relation to proper nouns such as "Aarhus Byraad". Using the tidytext principle, this proper noun will break up “aarhus” and “byraad” into separate rows. This results in a loss of meaning because “aarhus” and “byrrad” on their own is a reduction of meaning. "Aarhus Byraad" is a semantic unit, which we are destroying when converting to the tidytext-format. We are therefore interested in avoiding these instances and this is done via the regular expression:
+
+>"Aarhus Byraad", "aarhus_byraad"
+
+This expression prompts R to look for all the instances where "Aarhus" is followed by a space, followed by "Byraad". Then the space is replaced by “_” so that:
+
+>"Aarhus Byraad" is changed to "aarhus_byraad"
+
+By reading the data from the city council you realise that there are way more semantic units that begins with "Aarhus" (or perhaps you anticipated it even without reading). We can do the exact same thing for these instances. Here we will do it for a couple of the instances, but this could be elaborated with more:
+
+```{r chunk 3 - cleanse data}
+
+
+```
+This cleaning will prove to be inadequate, since there certainly will be more proper nouns spanning over more than one word. Besides that there might be other semantic units than just proper nouns. You can allways return to this step and put in more.
+The above code is in reality nothing more than a complex "search and replace"-function as we know it from word. The only difference is that we use regular expressions. These can be used to extract data from text or alter it, as we have done here. Regular expression are very powerful as they can be used to search after complex patterns of text. Regular expression are also a bit complex and a thorough survey is outside the scope of this workshop. If you wish to learn regular expression I can recommend this interactive tutorial: https://regexone.com. 
+
+We need to do one more thing that we will need later, which is to create at new column, that just contains the year. Right now the only column that contains temporal data is the `date_of_meeting` and that data is fairly dense since it contain both year, month of the data. We will now extract the month from this column:
+
+```{r}
+
+
+```
+
+
+
+Next, we transform the data into the before mentioned tidytextformat which will place each word into a row of its own. This is achieved by using the unnest_tokens function:
+
+```{r chunk 4 - convert to tidytext format}
+
+
+```
+
+
+<br>
+# Analysis
+
+Let's find the words that appear most frequent:
+```{r chunk 5}
+
+
+```
+
+
+Okay we see a lot of stop words here - what to do? A solution is to import a stopwords list. Here we load a prepared stop words list from the MIT-licensed stopwords-iso-package. The link is directly to the Danish list consisting of 170 words
+```{r, message=FALSE}
+stopord <- read_csv("https://gist.githubusercontent.com/maxodsbjerg/34f3d59a9e659ecdd5f8ff846ee4a5ca/raw/05ccb6acf4b3516280e3ee6fe6aeb29d24f37e25/stopord.txt")
+```
+
+
+
+
+
+
+Using the `anti_join` function with the new stop words list we can sort them away:
+
+```{r}
+
+
+```
+
+Alot of these words are still stop words - either old Danish stopwords like "paa", but also council specific stop words like "taleren". It seems like we need to make a somewhat brute council/old Danish stop word list. Let's take the first 35 from the list above
+
+The code is the same from the last step. `top_n` takes the first rows of the data and `select` is a function to selec columns. Here we only want the word-column:
+
+```{r, message=FALSE}
+
+
+```
+
+
+
+
+
+
+Now we add another line of `anti_join` - this time with our new council specific stopwords `council_stopwords`. Since the processing of two `anti_join` function are somewhat heavy, we first save the data to a new dataframe:
+
+```{r}
+
+
+```
+
+Using this new dataframe with the `count`-function give os a new view on the most used words in the council meeting from 1915 to 1930:
+```{r}
+
+
+```
+
+
+Arguably more of the word appearing on this list can be considered council specific stop words - but we also see names of what must be politicians in there amongst the words. Creating stopwords list is a dangerous task and you should be more careful than just taking the top as we did here. In general stop word list arent really a sophisticated way of handling them. But for now they will do. 
+
+
+Since we have the column containg information on the year it is straight forward to spread the count to years: 
+```{r}
+
+
+```
+
+
+Let us now try and make a visualisation of the ten most used words within each year:
+
+```{r}
+
+
+```
+Alot of words appears in every year - "borgmesteren" fx. But we however see words of interest that could lead us further: "lønudvalget"  from 1919 until appear there, while "hjælpekassen" only appear in 1930 - showing the emergence of the economic crisis - most likely 
