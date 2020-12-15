@@ -9,13 +9,6 @@ This report documents text mining on the city council meeting in Aarhus from 191
 
 The dataset is processed in the software programme R, offering various methods for statistical analysis and graphic representation of the results. In R, one works with packages each adding numerous functionalities to the core functions of R. In this example, the relevant packages are:
 
-```{r}
-install.packages("tidyverse")
-install.packages("tidytext")
-install.packages("lubridate")
-```
-
-
 ```{r chunk 1 - load libraries, warning=FALSE, message=FALSE}
 library(tidyverse)
 library(tidytext)
